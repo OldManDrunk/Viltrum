@@ -44,60 +44,60 @@ def parse_and_send_tracking(line):
         write_api.write(bucket=INFLUXDB_BUCKET, record=point)
 
 def parse_and_send_statistics(line):
-parts = line.strip().split()
-if len(parts) >= 13:
-point = Point("chrony_statistics") \
-.tag("ip", parts[2]) \
-.field("std_dev", float(parts[3])) \
-.field("est_offset", float(parts[4])) \
-.field("offset_sd", float(parts[5])) \
-.field("diff_freq", float(parts[6])) \
-.field("est_skew", float(parts[7])) \
-.field("stress", float(parts[8])) \
-.time(f"{parts[0]}T{parts[1]}Z")
-write_api.write(bucket=INFLUXDB_BUCKET, record=point)
+    parts = line.strip().split()
+    if len(parts) >= 13:
+        point = Point("chrony_statistics") \
+            .tag("ip", parts[2]) \
+            .field("std_dev", float(parts[3])) \
+            .field("est_offset", float(parts[4])) \
+            .field("offset_sd", float(parts[5])) \
+            .field("diff_freq", float(parts[6])) \
+            .field("est_skew", float(parts[7])) \
+            .field("stress", float(parts[8])) \
+            .time(f"{parts[0]}T{parts[1]}Z")
+        write_api.write(bucket=INFLUXDB_BUCKET, record=point)
 
 def parse_and_send_measurement(line):
-parts = line.strip().split()
-if len(parts) >= 15:
-point = Point("chrony_measurement") \
-.tag("ip", parts[2]) \
-.field("score", float(parts[9])) \
-.field("offset", float(parts[10])) \
-.field("peer_delay", float(parts[11])) \
-.field("peer_disp", float(parts[12])) \
-.field("root_delay", float(parts[13])) \
-.field("root_disp", float(parts[14])) \
-.time(f"{parts[0]}T{parts[1]}Z")
-write_api.write(bucket=INFLUXDB_BUCKET, record=point)
+    parts = line.strip().split()
+    if len(parts) >= 15:
+        point = Point("chrony_measurement") \
+            .tag("ip", parts[2]) \
+            .field("score", float(parts[9])) \
+            .field("offset", float(parts[10])) \
+            .field("peer_delay", float(parts[11])) \
+            .field("peer_disp", float(parts[12])) \
+            .field("root_delay", float(parts[13])) \
+            .field("root_disp", float(parts[14])) \
+            .time(f"{parts[0]}T{parts[1]}Z")
+        write_api.write(bucket=INFLUXDB_BUCKET, record=point)
 
 # Main loop
 def main():
-log_files = {
-"tracking.log": parse_and_send_tracking,
-"statistics.log": parse_and_send_statistics,
-"measurement.log": parse_and_send_measurement
-}
+    log_files = {
+        "tracking.log": parse_and_send_tracking,
+        "statistics.log": parse_and_send_statistics,
+        "measurement.log": parse_and_send_measurement
+    }
 
-# Initialize file positions
-for log_file in log_files:
-full_path = os.path.join(LOG_DIRECTORY, log_file)
-if os.path.exists(full_path):
-with open(full_path, "r") as f:
-f.seek(0, os.SEEK_END)
-file_positions[full_path] = f.tell()
+    # Initialize file positions
+    for log_file in log_files:
+        full_path = os.path.join(LOG_DIRECTORY, log_file)
+        if os.path.exists(full_path):
+            with open(full_path, "r") as f:
+                f.seek(0, os.SEEK_END)
+                file_positions[full_path] = f.tell()
 
-while True:
-for log_file, parser in log_files.items():
-full_path = os.path.join(LOG_DIRECTORY, log_file)
-if os.path.exists(full_path):
-lines = tail_file(full_path)
-for line in lines:
-try:
-parser(line)
-except Exception as e:
-print(f"Error parsing line in {log_file}: {e}")
-time.sleep(5)
+    while True:
+        for log_file, parser in log_files.items():
+            full_path = os.path.join(LOG_DIRECTORY, log_file)
+            if os.path.exists(full_path):
+                lines = tail_file(full_path)
+                for line in lines:
+                    try:
+                        parser(line)
+                    except Exception as e:
+                        print(f"Error parsing line in {log_file}: {e}")
+        time.sleep(5)
 
 if __name__ == "__main__":
-main()
+    main()
